@@ -3,24 +3,41 @@ sys.path.append('C:\\Python\\Lib\\site-packages')
 import urllib.request
 from bs4 import BeautifulSoup as BS
 import requests as req
+import webbrowser
+url_front='file:\\\\\\C:\\Python\\test\\python_crawler\\'
 
-def findurl(name):
-    f=open(name, 'r')
-    lines=f.readlines()
-    f.close()
-    c=lines[0]
-    listc=c.split("\\")
-    htp=[]
-    htpreal=[]
+
+def findurl_short(name, keyword):
+    try:
+        f=open('%s'%name, 'r')
+        lines=f.readlines()
+        f.close()
+        htp=[]
+        if lines!=[]:
+            listc=lines[0].split("\\")
+    except:
+        listc=[]
+        listd=[]
+        htp=[]
+        url_full='%s%s'%(url_front, name)
+        url_req=urllib.request.Request(url_full)
+        url_bs=BS(urllib.request.urlopen(url_req).read(), 'html.parser')
+        lines=url_bs.find_all('a')
+        for ln in lines:
+            c=ln.get('href')
+            d=ln.string
+            if type(c)==str:
+                listc+=[c]
+                listd+=[d]    
+    ii=0
+    hhtp={}
     for i in range(len(listc)):
-        if 'http:' in listc[i]:
+        if 'http:' and keyword in listc[i]:
             j=listc[i].find('http:')
             jj=listc[i][j:]
             k=jj.find(")")
             kk=jj.find('(')
             km=jj.find("\"")
-            #print(jj)
-            #print(k, km)
             if kk<k and kk>0:
                 continue
             elif k<km and k>0:
@@ -29,14 +46,100 @@ def findurl(name):
                 htp.append(jj[:km])
             else:
                 htp.append(jj)
-#    for i in range(len(htp)):
-#        if htp[i]:
-#            htpreal.append(htp[i])
-    return htp
+            hhtp[listc[ii]]=listd[ii]
+        ii+=1
+    return hhtp
+
+
+def findurl_long(name, type_of_file, keyword):
+    try:
+        f=open('%s.%s'%(name, type_of_file), 'r')
+        lines=f.readlines()
+        f.close()
+        htp=[]
+        if lines!=[]:
+            listc=lines[0].split("\\")
+    except:
+        listc=[]
+        listd=[]
+        htp=[]
+        url_full='%s%s.%s'%(url_front, name, type_of_file)
+        url_req=urllib.request.Request(url_full)
+        url_bs=BS(urllib.request.urlopen(url_req).read(), 'html.parser')
+        lines=url_bs.find_all('a')
+        for ln in lines:
+            c=ln.get('href')
+            d=ln.string
+            if type(c)==str:
+                listc+=[c]
+                listd+=[d]    
+    ii=0
+    hhtp={}
+    for i in range(len(listc)):
+        if 'http:' and keyword in listc[i]:
+            j=listc[i].find('http:')
+            jj=listc[i][j:]
+            k=jj.find(")")
+            kk=jj.find('(')
+            km=jj.find("\"")
+            if kk<k and kk>0:
+                continue
+            elif k<km and k>0:
+                htp.append(jj[:k])
+            elif km>0:
+                htp.append(jj[:km])
+            else:
+                htp.append(jj)
+            hhtp[listc[ii]]=listd[ii]
+        ii+=1
+    return hhtp
+
+def findurl():
+    idea=input('url를 검색하고 싶은 파일명과 검색하고 싶은 키워드를 적어주세요.\n').split(',')
+    if '.' in idea[0] and len(idea)>1:
+        c=findurl_short(idea[0], idea[1])
+    elif '.' in idea[0] and len(idea)==1:
+        c=findurl_short(idea[0], '')
+    elif '.' not in idea[0] and len(idea)>1:
+        data_type=input('확장자명을 적어주세요. ex) txt\n')
+        c=findurl_long(idea[0], data_type, idea[1])
+    else:
+        data_type=input('확장자명을 적어주세요. ex) txt\n')
+        c=findurl_long(idea[0], data_type, '')
+    return c
+
+def search(url_dic, keyword):
+    keylist=list(url_dic.keys())
+    itemlist=list(url_dic.values())
+    c={}
+    i=0
+    j=0
+    for key in keylist:
+        if keyword in key:
+            print("%s - %s : %s"%(keyword, key, itemlist[i]))
+            c[key]=itemlist[i]
+            j=1
+        elif itemlist[i]!=None and keyword in itemlist[i]:
+            print("%s - %s : %s"%(keyword, key, itemlist[i]))
+            c[key]=itemlist[i]
+            j=1
+        
+        i+=1
+    if j==0:
+        print('%s를 포함한 결과가 없습니다.'%keyword)
+        c=url_dic
+    return c
+
+def dosearch(url_dic, keywords):
+    ur=url_dic
+    for key in keywords:
+        ur=search(ur, key)
+    return ur
 
 def main():
     url1='http://mypi.ruliweb.com'
     url2='http://www.ruliweb.com'
+    test_url='file:\\\\\\C:\\Python\\test\\python_crawler\\test.html'
     endsent="웹페이지를 출력했습니다."
     q1="보고 싶은 웹 페이지의 url를 정확하게 적어주세요. 예) http://www.naver.com\n"
     mypi=['mypi', 'Mypi', '마이피']
@@ -83,7 +186,39 @@ def main():
     f=open('test.html', 'a')
     f.write('</body></html>')
     f.close()
-        
+    name_read=input('If you want to open the file, please input the name of file precisely.')
+    if name_read=="mypi":
+        f=open('test.html','r')
+        lines=f.readlines()
+        f.close()
+        urid='file:\\\\\\C:\\Python\\test\\python_crawler\\ruliweb_id.html'
+        ruli_sp=BS(urllib.request.urlopen(urllib.request.Request(urid)).read(), 'html.parser')
+        ruli_lines=str(ruli_sp.find_all('form')[0])
+        print(ruli_lines)
+
+        f=open('test.html', 'w')
+        f.write("""<html><body>
+                    %s"""%ruli_lines)
+        f.close()
+        for line in lines:
+            f=open('test.html', 'a')
+            f.write(line)
+            f.close()
+        f=open('test.html', 'a')
+        f.write('</body></html>')
+        f.close()
+        f=open('test2.html', 'w')
+        f.write("""<html><body><iframe src="%s"></iframe>
+                    """%urid)
+        f.close()
+        for line in lines:
+            f=open('test2.html', 'a')
+            f.write(line)
+            f.close()
+        f=open('test2.html', 'a')
+        f.write('</body></html>')
+        f.close()
+        webbrowser.open(test_url)
         #try:
         #    dt+="<a href=\"%s\">%s</a>\n"%(str(lk.get('href')),str(lk.get_text()))
         #except:
